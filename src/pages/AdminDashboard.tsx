@@ -6,6 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, CheckCircle, XCircle, Clock, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const AdminDashboard: React.FC = () => {
   const { leaveRequests, updateLeaveRequest } = useLeave();
@@ -27,9 +38,9 @@ const AdminDashboard: React.FC = () => {
 
   const LeaveStatusBadge: React.FC<{ status: LeaveRequest['status'] }> = ({ status }) => {
     const statusConfig = {
-      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'leave-status-pending' },
-      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'leave-status-approved' },
-      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'leave-status-rejected' }
+      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'bg-yellow-100 text-yellow-800' },
+      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'bg-green-100 text-green-800' },
+      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'bg-red-100 text-red-800' }
     };
     
     const config = statusConfig[status];
@@ -89,22 +100,59 @@ const AdminDashboard: React.FC = () => {
           
           {isPending && (
             <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                onClick={() => handleReject(leave.id)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => handleApprove(leave.id)}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reject Leave Request</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to reject this leave request? 
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => handleReject(leave.id)}
+                    >
+                      Reject
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Approve Leave Request</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to approve this leave request?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleApprove(leave.id)}>
+                      Approve
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </CardFooter>
