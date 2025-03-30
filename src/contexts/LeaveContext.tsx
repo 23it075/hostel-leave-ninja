@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "sonner";
 import { useAuth, User } from './AuthContext';
@@ -57,9 +58,18 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
 
   useEffect(() => {
+    // Load leave requests from localStorage on initial render
     const storedLeaves = localStorage.getItem('leaveRequests');
     if (storedLeaves) {
-      setLeaveRequests(JSON.parse(storedLeaves));
+      try {
+        const parsedLeaves = JSON.parse(storedLeaves);
+        setLeaveRequests(parsedLeaves);
+      } catch (error) {
+        console.error('Error parsing stored leave requests:', error);
+        // Initialize with empty array if parsing fails
+        setLeaveRequests([]);
+        localStorage.setItem('leaveRequests', JSON.stringify([]));
+      }
     } else {
       const mockLeaves: LeaveRequest[] = [
         {
@@ -114,7 +124,9 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Save leave requests to localStorage whenever they change
   useEffect(() => {
+    console.log('Saving leave requests to localStorage:', leaveRequests);
     localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
   }, [leaveRequests]);
 
@@ -137,7 +149,14 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       updatedAt: new Date().toISOString()
     };
 
-    setLeaveRequests(prev => [newLeaveRequest, ...prev]);
+    console.log('Creating new leave request:', newLeaveRequest);
+    
+    setLeaveRequests(prev => {
+      const updated = [newLeaveRequest, ...prev];
+      console.log('Updated leave requests:', updated);
+      return updated;
+    });
+    
     toast.success('Leave request submitted successfully');
   };
 
