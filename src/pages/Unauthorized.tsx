@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Database } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Unauthorized: React.FC = () => {
@@ -24,6 +24,17 @@ const Unauthorized: React.FC = () => {
         <Button asChild>
           <Link to="/dashboard">Go to Dashboard</Link>
         </Button>
+      </div>
+      
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100 max-w-md">
+        <div className="flex items-center gap-2 mb-2 text-blue-700">
+          <Database className="h-5 w-5" />
+          <h3 className="font-semibold">Backend Integration Added</h3>
+        </div>
+        <p className="text-sm text-blue-600">
+          A Node.js/Express backend with MongoDB integration has been set up in the <code className="px-1 py-0.5 bg-blue-100 rounded">src/backend</code> directory. 
+          Check the readme file for setup instructions.
+        </p>
       </div>
     </div>
   );
