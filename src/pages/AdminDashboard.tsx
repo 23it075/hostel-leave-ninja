@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLeave, LeaveRequest, LEAVE_TYPE_LABELS } from '@/contexts/LeaveContext';
 import { Button } from '@/components/ui/button';
@@ -46,12 +45,12 @@ const AdminDashboard: React.FC = () => {
       other: { class: 'bg-gray-100 text-gray-800' }
     };
     
-    const config = typeConfig[type];
+    const config = typeConfig[type] || typeConfig.other;
     
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
         <Calendar className="h-3 w-3 mr-1" />
-        {LEAVE_TYPE_LABELS[type]}
+        {LEAVE_TYPE_LABELS[type] || 'Other'}
       </span>
     );
   };

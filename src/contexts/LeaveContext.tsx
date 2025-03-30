@@ -56,13 +56,11 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
 
-  // Load leave requests from localStorage
   useEffect(() => {
     const storedLeaves = localStorage.getItem('leaveRequests');
     if (storedLeaves) {
       setLeaveRequests(JSON.parse(storedLeaves));
     } else {
-      // Initialize with some mock data if needed
       const mockLeaves: LeaveRequest[] = [
         {
           id: '1',
@@ -116,7 +114,6 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Save leave requests to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
   }, [leaveRequests]);
@@ -148,23 +145,18 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     setLeaveRequests(prev => 
       prev.map(leave => {
         if (leave.id === id) {
-          // Update approval based on user role
           const parentApproval = user?.role === 'parent' ? status === 'approved' : leave.parentApproval;
           const adminApproval = user?.role === 'admin' ? status === 'approved' : leave.adminApproval;
           
-          // Determine final status
           let finalStatus = leave.status;
           let finalApproval = false;
           
           if (status === 'rejected') {
-            // If either rejects, the entire request is rejected
             finalStatus = 'rejected';
           } else if (parentApproval && adminApproval) {
-            // If both approve, the request is approved
             finalStatus = 'approved';
             finalApproval = true;
           } else {
-            // Otherwise, it remains pending
             finalStatus = 'pending';
           }
           
