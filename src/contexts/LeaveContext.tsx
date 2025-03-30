@@ -1,27 +1,37 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "sonner";
 import { useAuth, User } from './AuthContext';
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+export type LeaveType = 'home_leave' | 'one_day_leave' | 'medical_leave' | 'emergency_leave' | 'other';
+
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  home_leave: 'Home Leave',
+  one_day_leave: 'One Day Leave',
+  medical_leave: 'Medical Leave',
+  emergency_leave: 'Emergency Leave',
+  other: 'Other'
+};
 
 export interface LeaveRequest {
   id: string;
   studentId: string;
   studentName: string;
+  leaveType: LeaveType;
   fromDate: string;
   toDate: string;
   reason: string;
   status: LeaveStatus;
-  parentApproval?: boolean;
-  adminApproval?: boolean;
+  parentApproval: boolean;
+  adminApproval: boolean;
+  finalApproval: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 interface LeaveContextType {
   leaveRequests: LeaveRequest[];
-  createLeaveRequest: (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName'>) => void;
+  createLeaveRequest: (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => void;
   updateLeaveRequest: (id: string, status: LeaveStatus) => void;
   getStudentLeaves: (studentId: string) => LeaveRequest[];
   getPendingLeaves: () => LeaveRequest[];
@@ -58,12 +68,14 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
           id: '1',
           studentId: '1',
           studentName: 'John Student',
+          leaveType: 'home_leave',
           fromDate: '2023-10-12',
           toDate: '2023-10-15',
           reason: 'Family function',
           status: 'approved',
           parentApproval: true,
           adminApproval: true,
+          finalApproval: true,
           createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
           updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
         },
@@ -71,12 +83,14 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
           id: '2',
           studentId: '1',
           studentName: 'John Student',
+          leaveType: 'medical_leave',
           fromDate: '2023-11-05',
           toDate: '2023-11-07',
           reason: 'Medical appointment',
           status: 'rejected',
           parentApproval: false,
           adminApproval: false,
+          finalApproval: false,
           createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
           updatedAt: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString()
         },
@@ -84,10 +98,14 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
           id: '3',
           studentId: '1',
           studentName: 'John Student',
+          leaveType: 'one_day_leave',
           fromDate: '2023-12-20',
-          toDate: '2023-12-25',
-          reason: 'Winter holidays',
+          toDate: '2023-12-20',
+          reason: 'Personal errands',
           status: 'pending',
+          parentApproval: true,
+          adminApproval: false,
+          finalApproval: false,
           createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
           updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
         }
@@ -103,7 +121,7 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
   }, [leaveRequests]);
 
-  const createLeaveRequest = (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName'>) => {
+  const createLeaveRequest = (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => {
     if (!user) {
       toast.error('You must be logged in to create a leave request');
       return;
@@ -115,6 +133,9 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       studentName: user.name,
       ...data,
       status: 'pending',
+      parentApproval: false,
+      adminApproval: false,
+      finalApproval: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -125,17 +146,39 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
 
   const updateLeaveRequest = (id: string, status: LeaveStatus) => {
     setLeaveRequests(prev => 
-      prev.map(leave => 
-        leave.id === id 
-          ? {
-              ...leave,
-              status,
-              parentApproval: user?.role === 'parent' ? status === 'approved' : leave.parentApproval,
-              adminApproval: user?.role === 'admin' ? status === 'approved' : leave.adminApproval,
-              updatedAt: new Date().toISOString()
-            } 
-          : leave
-      )
+      prev.map(leave => {
+        if (leave.id === id) {
+          // Update approval based on user role
+          const parentApproval = user?.role === 'parent' ? status === 'approved' : leave.parentApproval;
+          const adminApproval = user?.role === 'admin' ? status === 'approved' : leave.adminApproval;
+          
+          // Determine final status
+          let finalStatus = leave.status;
+          let finalApproval = false;
+          
+          if (status === 'rejected') {
+            // If either rejects, the entire request is rejected
+            finalStatus = 'rejected';
+          } else if (parentApproval && adminApproval) {
+            // If both approve, the request is approved
+            finalStatus = 'approved';
+            finalApproval = true;
+          } else {
+            // Otherwise, it remains pending
+            finalStatus = 'pending';
+          }
+          
+          return {
+            ...leave,
+            parentApproval,
+            adminApproval,
+            status: finalStatus,
+            finalApproval,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return leave;
+      })
     );
     
     toast.success(`Leave request ${status}`);

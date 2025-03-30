@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLeave, LeaveRequest } from '@/contexts/LeaveContext';
+import { useLeave, LeaveRequest, LeaveType, LEAVE_TYPE_LABELS } from '@/contexts/LeaveContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PlusCircle, CheckCircle, XCircle, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -19,6 +20,7 @@ const StudentDashboard: React.FC = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
+  const [leaveType, setLeaveType] = useState<LeaveType>('home_leave');
 
   const studentLeaves = user ? getStudentLeaves(user.id) : [];
   const pendingLeaves = studentLeaves.filter(leave => leave.status === 'pending');
@@ -28,26 +30,28 @@ const StudentDashboard: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fromDate || !toDate || !reason) return;
+    if (!fromDate || !toDate || !reason || !leaveType) return;
     
     createLeaveRequest({
       fromDate,
       toDate,
       reason,
+      leaveType,
     });
     
     // Reset form
     setFromDate('');
     setToDate('');
     setReason('');
+    setLeaveType('home_leave');
     setIsDialogOpen(false);
   };
 
   const LeaveStatusBadge: React.FC<{ status: LeaveRequest['status'] }> = ({ status }) => {
     const statusConfig = {
-      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'leave-status-pending' },
-      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'leave-status-approved' },
-      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'leave-status-rejected' }
+      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'bg-yellow-100 text-yellow-800' },
+      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'bg-green-100 text-green-800' },
+      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'bg-red-100 text-red-800' }
     };
     
     const config = statusConfig[status];
@@ -65,12 +69,14 @@ const StudentDashboard: React.FC = () => {
       <Card className="mb-4">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">Leave Request</CardTitle>
+            <div>
+              <CardTitle className="text-lg">Leave Request</CardTitle>
+              <CardDescription>
+                {LEAVE_TYPE_LABELS[leave.leaveType]} • Created on {format(new Date(leave.createdAt), 'PPP')}
+              </CardDescription>
+            </div>
             <LeaveStatusBadge status={leave.status} />
           </div>
-          <CardDescription>
-            Created on {format(new Date(leave.createdAt), 'PPP')}
-          </CardDescription>
         </CardHeader>
         <CardContent className="pb-2">
           <div className="grid grid-cols-2 gap-4 mb-2">
@@ -83,9 +89,23 @@ const StudentDashboard: React.FC = () => {
               <p className="text-sm">{format(new Date(leave.toDate), 'PPP')}</p>
             </div>
           </div>
-          <div>
+          <div className="mb-2">
             <p className="text-sm font-medium">Reason</p>
             <p className="text-sm text-gray-700">{leave.reason}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">Parent Approval</p>
+              <p className="text-sm">
+                {leave.parentApproval ? 'Approved' : 'Pending'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Admin Approval</p>
+              <p className="text-sm">
+                {leave.adminApproval ? 'Approved' : 'Pending'}
+              </p>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="pt-0">
@@ -117,6 +137,22 @@ const StudentDashboard: React.FC = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="leaveType">Leave Type</Label>
+                  <Select value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select leave type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(LEAVE_TYPE_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fromDate">From Date</Label>

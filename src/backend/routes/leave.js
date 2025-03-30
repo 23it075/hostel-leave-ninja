@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const LeaveRequest = require('../models/LeaveRequest');
@@ -10,14 +9,19 @@ const User = require('../models/User');
 // @access  Private (students only)
 router.post('/', auth, authorize('student'), async (req, res) => {
   try {
-    const { fromDate, toDate, reason } = req.body;
+    const { fromDate, toDate, reason, leaveType } = req.body;
+    
+    if (!leaveType) {
+      return res.status(400).json({ message: 'Leave type is required' });
+    }
     
     const newLeaveRequest = new LeaveRequest({
       studentId: req.user._id,
       studentName: req.user.name,
       fromDate,
       toDate,
-      reason
+      reason,
+      leaveType
     });
     
     const leaveRequest = await newLeaveRequest.save();
@@ -101,7 +105,6 @@ router.put('/:id', auth, authorize('parent', 'admin'), async (req, res) => {
     }
     
     const updateData = {
-      status,
       updatedAt: Date.now()
     };
     
@@ -110,6 +113,25 @@ router.put('/:id', auth, authorize('parent', 'admin'), async (req, res) => {
       updateData.parentApproval = status === 'approved';
     } else if (req.user.role === 'admin') {
       updateData.adminApproval = status === 'approved';
+    }
+    
+    // If either parent or admin rejects, update overall status to rejected
+    if (status === 'rejected') {
+      updateData.status = 'rejected';
+      updateData.finalApproval = false;
+    } else {
+      // Check if we can set as fully approved
+      const willBeFullyApproved = 
+        (req.user.role === 'parent' && status === 'approved' && leaveRequest.adminApproval) ||
+        (req.user.role === 'admin' && status === 'approved' && leaveRequest.parentApproval);
+      
+      if (willBeFullyApproved) {
+        updateData.status = 'approved';
+        updateData.finalApproval = true;
+      } else {
+        // Keep as pending until both approve
+        updateData.status = 'pending';
+      }
     }
     
     leaveRequest = await LeaveRequest.findByIdAndUpdate(

@@ -1,10 +1,11 @@
 
 import React from 'react';
-import { useLeave, LeaveRequest } from '@/contexts/LeaveContext';
+import { useLeave, LeaveRequest, LEAVE_TYPE_LABELS } from '@/contexts/LeaveContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, CheckCircle, XCircle, Clock, BarChart3 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, CheckCircle, XCircle, Clock, BarChart3, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -36,6 +37,25 @@ const AdminDashboard: React.FC = () => {
     updateLeaveRequest(id, 'rejected');
   };
 
+  const LeaveTypeBadge: React.FC<{ type: LeaveRequest['leaveType'] }> = ({ type }) => {
+    const typeConfig = {
+      home_leave: { class: 'bg-blue-100 text-blue-800' },
+      one_day_leave: { class: 'bg-purple-100 text-purple-800' },
+      medical_leave: { class: 'bg-pink-100 text-pink-800' },
+      emergency_leave: { class: 'bg-orange-100 text-orange-800' },
+      other: { class: 'bg-gray-100 text-gray-800' }
+    };
+    
+    const config = typeConfig[type];
+    
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
+        <Calendar className="h-3 w-3 mr-1" />
+        {LEAVE_TYPE_LABELS[type]}
+      </span>
+    );
+  };
+
   const LeaveStatusBadge: React.FC<{ status: LeaveRequest['status'] }> = ({ status }) => {
     const statusConfig = {
       pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'bg-yellow-100 text-yellow-800' },
@@ -53,6 +73,20 @@ const AdminDashboard: React.FC = () => {
     );
   };
 
+  const ApprovalStatus: React.FC<{ approved: boolean | undefined }> = ({ approved }) => {
+    if (approved === undefined) return <span className="text-gray-400">N/A</span>;
+    
+    return approved ? (
+      <span className="text-green-600 flex items-center">
+        <CheckCircle className="h-4 w-4 mr-1" /> Approved
+      </span>
+    ) : (
+      <span className="text-yellow-600 flex items-center">
+        <Clock className="h-4 w-4 mr-1" /> Pending
+      </span>
+    );
+  };
+
   const LeaveCard: React.FC<{ leave: LeaveRequest; isPending?: boolean }> = ({ leave, isPending }) => {
     return (
       <Card className="mb-4">
@@ -60,8 +94,9 @@ const AdminDashboard: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-lg">{leave.studentName}</CardTitle>
-              <CardDescription>
-                Created on {format(new Date(leave.createdAt), 'PPP')}
+              <CardDescription className="flex gap-2 mt-1">
+                <LeaveTypeBadge type={leave.leaveType} />
+                <span>Created on {format(new Date(leave.createdAt), 'PPP')}</span>
               </CardDescription>
             </div>
             <LeaveStatusBadge status={leave.status} />
@@ -78,20 +113,28 @@ const AdminDashboard: React.FC = () => {
               <p className="text-sm">{format(new Date(leave.toDate), 'PPP')}</p>
             </div>
           </div>
-          <div>
+          <div className="mb-2">
             <p className="text-sm font-medium">Reason</p>
             <p className="text-sm text-gray-700">{leave.reason}</p>
           </div>
-          <div className="mt-2">
-            <p className="text-sm font-medium">Parent Approval</p>
-            <p className="text-sm">
-              {leave.parentApproval === true 
-                ? 'Approved' 
-                : leave.parentApproval === false 
-                  ? 'Rejected' 
-                  : 'Pending'}
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">Parent Approval</p>
+              <ApprovalStatus approved={leave.parentApproval} />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Admin Approval</p>
+              <ApprovalStatus approved={leave.adminApproval} />
+            </div>
           </div>
+          {leave.finalApproval && (
+            <div className="mt-2">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <CheckCircle className="h-3.5 w-3.5 mr-1" /> 
+                Fully Approved
+              </Badge>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="pt-0 flex justify-between items-center">
           <div className="text-xs text-muted-foreground">
@@ -142,7 +185,9 @@ const AdminDashboard: React.FC = () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Approve Leave Request</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to approve this leave request?
+                      {leave.parentApproval 
+                        ? "The parent has already approved this request. Your approval will fully approve the leave request."
+                        : "Note: This leave still requires parent approval before it's fully approved."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -162,7 +207,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium text-muted-foreground">Total Requests</CardTitle>
@@ -177,6 +222,14 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{pendingLeaves.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium text-muted-foreground">Approved</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{approvedLeaves.length}</div>
           </CardContent>
         </Card>
         <Card>

@@ -11,6 +11,11 @@ const LeaveRequestSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  leaveType: {
+    type: String,
+    enum: ['home_leave', 'one_day_leave', 'medical_leave', 'emergency_leave', 'other'],
+    required: true
+  },
   fromDate: {
     type: Date,
     required: true
@@ -36,6 +41,10 @@ const LeaveRequestSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  finalApproval: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -44,6 +53,19 @@ const LeaveRequestSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Add a pre-save middleware to update finalApproval status
+LeaveRequestSchema.pre('save', function(next) {
+  // If both parent and admin have approved, set finalApproval to true
+  if (this.parentApproval && this.adminApproval) {
+    this.finalApproval = true;
+    this.status = 'approved';
+  } else if (this.status === 'rejected') {
+    // If rejected by either party, ensure finalApproval is false
+    this.finalApproval = false;
+  }
+  next();
 });
 
 module.exports = mongoose.model('LeaveRequest', LeaveRequestSchema);
