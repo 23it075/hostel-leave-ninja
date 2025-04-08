@@ -22,6 +22,25 @@ npm install
 - Update the `MONGO_URI` with your MongoDB connection string
 - Set a secure `JWT_SECRET` for token generation
 
+### MongoDB Connection
+
+#### Option 1: Local MongoDB
+If you're using a local MongoDB instance:
+```
+MONGO_URI=mongodb://localhost:27017/hostel-leave-management
+```
+
+#### Option 2: MongoDB Atlas (Cloud)
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new cluster
+3. In the Security tab, create a database user with read/write permissions
+4. In the Network Access tab, allow access from your IP address
+5. In the Database tab, click "Connect" and select "Connect your application"
+6. Copy the connection string and replace `<username>`, `<password>`, and `<dbname>` with your values:
+```
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority
+```
+
 3. Start the server:
 ```
 # Development mode with auto-restart
