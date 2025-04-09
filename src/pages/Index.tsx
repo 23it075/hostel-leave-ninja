@@ -2,28 +2,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { School, CheckCircle } from 'lucide-react';
+import { Calendar, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
   const { user } = useAuth();
-
-  const features = [
-    "Easy leave application for students",
-    "Real-time status tracking",
-    "Parent approval system",
-    "Admin oversight and management",
-    "Leave history records",
-    "Responsive design for all devices"
-  ];
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <School className="h-8 w-8 text-primary mr-2" />
-            <h1 className="text-xl font-bold">Hostel Leave Management</h1>
+            <Calendar className="h-8 w-8 text-primary mr-2" />
+            <h1 className="text-xl font-bold">LeaveIt</h1>
           </div>
           <div>
             {user ? (
@@ -46,7 +37,7 @@ const Index: React.FC = () => {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-blue-50 to-white py-20">
+        <section className="bg-gradient-to-b from-gray-50 to-white py-20">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Simplify Hostel Leave Management
@@ -65,21 +56,6 @@ const Index: React.FC = () => {
                   <Link to="/login">Log In</Link>
                 </Button>
               )}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <h3 className="text-2xl font-bold text-center mb-12">Key Features</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-start p-4 bg-gray-50 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-primary mr-3 mt-0.5" />
-                  <p className="font-medium">{feature}</p>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -137,8 +113,8 @@ const Index: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <School className="h-6 w-6 mr-2" />
-              <p className="font-semibold">Hostel Leave Management</p>
+              <Calendar className="h-6 w-6 mr-2" />
+              <p className="font-semibold">LeaveIt</p>
             </div>
             <p className="text-sm">© {new Date().getFullYear()} All rights reserved</p>
           </div>
