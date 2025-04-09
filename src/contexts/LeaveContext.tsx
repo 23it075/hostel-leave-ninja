@@ -1,7 +1,8 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "sonner";
-import { useAuth, User } from './AuthContext';
+import { useAuth } from './AuthContext';
+import { getLeaveRequests, createLeaveRequest as apiCreateLeave, updateLeaveRequestStatus } from '../services/api';
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 export type LeaveType = 'home_leave' | 'one_day_leave' | 'medical_leave' | 'emergency_leave' | 'other';
@@ -32,11 +33,14 @@ export interface LeaveRequest {
 
 interface LeaveContextType {
   leaveRequests: LeaveRequest[];
-  createLeaveRequest: (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => void;
-  updateLeaveRequest: (id: string, status: LeaveStatus) => void;
+  createLeaveRequest: (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => Promise<void>;
+  updateLeaveRequest: (id: string, status: LeaveStatus) => Promise<void>;
   getStudentLeaves: (studentId: string) => LeaveRequest[];
   getPendingLeaves: () => LeaveRequest[];
   getAllLeaves: () => LeaveRequest[];
+  loading: boolean;
+  error: string | null;
+  refetchLeaves: () => Promise<void>;
 }
 
 const LeaveContext = createContext<LeaveContextType | undefined>(undefined);
@@ -56,145 +60,93 @@ interface LeaveProviderProps {
 export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load leave requests from localStorage on initial render
-    const storedLeaves = localStorage.getItem('leaveRequests');
-    if (storedLeaves) {
-      try {
-        const parsedLeaves = JSON.parse(storedLeaves);
-        setLeaveRequests(parsedLeaves);
-      } catch (error) {
-        console.error('Error parsing stored leave requests:', error);
-        // Initialize with empty array if parsing fails
-        setLeaveRequests([]);
-        localStorage.setItem('leaveRequests', JSON.stringify([]));
-      }
-    } else {
-      const mockLeaves: LeaveRequest[] = [
-        {
-          id: '1',
-          studentId: '1',
-          studentName: 'John Student',
-          leaveType: 'home_leave',
-          fromDate: '2023-10-12',
-          toDate: '2023-10-15',
-          reason: 'Family function',
-          status: 'approved',
-          parentApproval: true,
-          adminApproval: true,
-          finalApproval: true,
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          studentId: '1',
-          studentName: 'John Student',
-          leaveType: 'medical_leave',
-          fromDate: '2023-11-05',
-          toDate: '2023-11-07',
-          reason: 'Medical appointment',
-          status: 'rejected',
-          parentApproval: false,
-          adminApproval: false,
-          finalApproval: false,
-          createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          studentId: '1',
-          studentName: 'John Student',
-          leaveType: 'one_day_leave',
-          fromDate: '2023-12-20',
-          toDate: '2023-12-20',
-          reason: 'Personal errands',
-          status: 'pending',
-          parentApproval: true,
-          adminApproval: false,
-          finalApproval: false,
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
+  // Function to fetch leaves from the API
+  const fetchLeaves = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await getLeaveRequests();
+      console.log('Fetched leave requests:', response.data);
+      setLeaveRequests(response.data);
+    } catch (err) {
+      console.error('Error fetching leave requests:', err);
+      setError('Failed to fetch leave requests');
       
-      setLeaveRequests(mockLeaves);
-      localStorage.setItem('leaveRequests', JSON.stringify(mockLeaves));
+      // Fall back to localStorage data if API fails
+      const storedLeaves = localStorage.getItem('leaveRequests');
+      if (storedLeaves) {
+        try {
+          const parsedLeaves = JSON.parse(storedLeaves);
+          setLeaveRequests(parsedLeaves);
+        } catch (parseErr) {
+          console.error('Error parsing stored leave requests:', parseErr);
+        }
+      }
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
-  // Save leave requests to localStorage whenever they change
+  // Fetch leaves when component mounts and when user changes
   useEffect(() => {
-    console.log('Saving leave requests to localStorage:', leaveRequests);
-    localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
-  }, [leaveRequests]);
+    if (user) {
+      fetchLeaves();
+    }
+  }, [user]);
 
-  const createLeaveRequest = (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => {
+  // Create a new leave request
+  const createLeaveRequest = async (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => {
     if (!user) {
       toast.error('You must be logged in to create a leave request');
       return;
     }
 
-    const newLeaveRequest: LeaveRequest = {
-      id: Date.now().toString(),
-      studentId: user.id,
-      studentName: user.name,
-      ...data,
-      status: 'pending',
-      parentApproval: false,
-      adminApproval: false,
-      finalApproval: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    console.log('Creating new leave request:', newLeaveRequest);
-    
-    setLeaveRequests(prev => {
-      const updated = [newLeaveRequest, ...prev];
-      console.log('Updated leave requests:', updated);
-      return updated;
-    });
-    
-    toast.success('Leave request submitted successfully');
+    try {
+      setLoading(true);
+      const response = await apiCreateLeave(data);
+      console.log('Created leave request:', response.data);
+      
+      // Add the new leave to the state
+      setLeaveRequests(prev => [response.data, ...prev]);
+      toast.success('Leave request submitted successfully');
+    } catch (err) {
+      console.error('Error creating leave request:', err);
+      toast.error('Failed to submit leave request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateLeaveRequest = (id: string, status: LeaveStatus) => {
-    setLeaveRequests(prev => 
-      prev.map(leave => {
-        if (leave.id === id) {
-          const parentApproval = user?.role === 'parent' ? status === 'approved' : leave.parentApproval;
-          const adminApproval = user?.role === 'admin' ? status === 'approved' : leave.adminApproval;
-          
-          let finalStatus = leave.status;
-          let finalApproval = false;
-          
-          if (status === 'rejected') {
-            finalStatus = 'rejected';
-          } else if (parentApproval && adminApproval) {
-            finalStatus = 'approved';
-            finalApproval = true;
-          } else {
-            finalStatus = 'pending';
-          }
-          
-          return {
-            ...leave,
-            parentApproval,
-            adminApproval,
-            status: finalStatus,
-            finalApproval,
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return leave;
-      })
-    );
-    
-    toast.success(`Leave request ${status}`);
+  // Update a leave request status
+  const updateLeaveRequest = async (id: string, status: LeaveStatus) => {
+    try {
+      setLoading(true);
+      const response = await updateLeaveRequestStatus(id, status);
+      console.log('Updated leave request:', response.data);
+      
+      // Update the leave in the state
+      setLeaveRequests(prev => 
+        prev.map(leave => leave.id === id ? response.data : leave)
+      );
+      
+      toast.success(`Leave request ${status}`);
+    } catch (err) {
+      console.error('Error updating leave request:', err);
+      toast.error('Failed to update leave request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Helper functions to filter leaves
   const getStudentLeaves = (studentId: string) => {
     return leaveRequests.filter(leave => leave.studentId === studentId);
   };
@@ -214,7 +166,10 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       updateLeaveRequest,
       getStudentLeaves,
       getPendingLeaves,
-      getAllLeaves
+      getAllLeaves,
+      loading,
+      error,
+      refetchLeaves: fetchLeaves
     }}>
       {children}
     </LeaveContext.Provider>

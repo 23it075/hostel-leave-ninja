@@ -1,10 +1,11 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { loginUser, registerUser, getCurrentUser } from '../services/api';
 
 export type UserRole = 'student' | 'parent' | 'admin';
 
-export interface User {
+interface User {
   id: string;
   name: string;
   email: string;
@@ -13,13 +14,17 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User | undefined>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<User | undefined>;
   logout: () => void;
-  isLoading: boolean;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -29,99 +34,93 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
+  // Load user from localStorage on initial render
   useEffect(() => {
-    // In a real app, verify the token with your backend
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const storedToken = localStorage.getItem('token');
+
+    if (storedUser && storedToken) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        // Clear potentially invalid data from localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
-    setIsLoading(false);
+
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
-      // Mock login - in a real app, this would be an API call
-      // For demo purposes: hard-coded users based on email
-      let mockUser: User;
-      
-      if (email === 'student@example.com') {
-        mockUser = {
-          id: '1',
-          name: 'John Student',
-          email: 'student@example.com',
-          role: 'student'
-        };
-      } else if (email === 'parent@example.com') {
-        mockUser = {
-          id: '2',
-          name: 'Mary Parent',
-          email: 'parent@example.com',
-          role: 'parent'
-        };
-      } else if (email === 'admin@example.com') {
-        mockUser = {
-          id: '3',
-          name: 'Alex Admin',
-          email: 'admin@example.com',
-          role: 'admin'
-        };
-      } else {
-        throw new Error('Invalid credentials');
-      }
+      const response = await loginUser(email, password);
+      const userData = response.data;
 
-      // Store user in localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      toast.success(`Welcome back, ${mockUser.name}!`);
+      // Save the token to localStorage
+      localStorage.setItem('token', userData.token);
+      localStorage.setItem('user', JSON.stringify(userData.user));
+      
+      setUser(userData.user);
+      
+      return userData.user;
     } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
+      console.error('Login error:', error);
+      toast.error('Invalid credentials. Please try again.');
       throw error;
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const register = async (name: string, email: string, password: string, role: UserRole) => {
+    try {
+      const response = await registerUser(name, email, password, role);
+      const userData = response.data;
+
+      // Save the token to localStorage
+      localStorage.setItem('token', userData.token);
+      localStorage.setItem('user', JSON.stringify(userData.user));
+      
+      setUser(userData.user);
+      
+      return userData.user;
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Registration failed. Please try again.');
+      throw error;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
     setUser(null);
-    toast.info('You have been logged out.');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
-    setIsLoading(true);
-    try {
-      // Mock registration - would be an API call in a real app
-      const mockUser: User = {
-        id: Date.now().toString(),
-        name,
-        email,
-        role
-      };
-      
-      // Store user in localStorage
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      toast.success('Registration successful!');
-    } catch (error) {
-      toast.error('Registration failed. Please try again.');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+  const isLoggedIn = () => {
+    return !!localStorage.getItem('token');
+  };
+
+  const contextValue: AuthContextType = {
+    user,
+    login,
+    register,
+    logout,
+    loading,
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, register }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;
