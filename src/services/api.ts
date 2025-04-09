@@ -29,6 +29,9 @@ const mockUsers = [
   { id: '3', name: 'Admin User', email: 'admin@example.com', role: 'admin' }
 ];
 
+// Mock leave requests data
+let mockLeaveRequests = [];
+
 // Auth services
 export const loginUser = async (email: string, password: string) => {
   try {
@@ -90,16 +93,139 @@ export const getCurrentUser = async () => {
 };
 
 // Leave services
-export const getLeaveRequests = () => 
-  API.get('/leave');
+export const getLeaveRequests = async () => {
+  try {
+    return await API.get('/leave');
+  } catch (error) {
+    console.log('Using mock leave data due to API error');
+    // Get current user from token
+    const token = localStorage.getItem('token');
+    let userId = null;
+    
+    if (token && token.startsWith('mock-token-')) {
+      userId = token.replace('mock-token-', '');
+    }
+    
+    // Filter leave requests based on user role and id
+    const user = mockUsers.find(u => u.id === userId);
+    if (user) {
+      if (user.role === 'student') {
+        // Students only see their own leave requests
+        return { data: mockLeaveRequests.filter(leave => leave.studentId === userId) };
+      } else {
+        // Parents and admins see all leave requests
+        return { data: mockLeaveRequests };
+      }
+    }
+    
+    throw new Error('Not authenticated');
+  }
+};
 
-export const getLeaveRequestById = (id: string) => 
-  API.get(`/leave/${id}`);
+export const getLeaveRequestById = async (id: string) => {
+  try {
+    return await API.get(`/leave/${id}`);
+  } catch (error) {
+    console.log('Using mock leave data due to API error');
+    const leaveRequest = mockLeaveRequests.find(leave => leave.id === id);
+    if (leaveRequest) {
+      return { data: leaveRequest };
+    }
+    throw new Error('Leave request not found');
+  }
+};
 
-export const createLeaveRequest = (leaveData: any) => 
-  API.post('/leave', leaveData);
+export const createLeaveRequest = async (leaveData: any) => {
+  try {
+    return await API.post('/leave', leaveData);
+  } catch (error) {
+    console.log('Using mock leave creation due to API error');
+    
+    // Get current user
+    const token = localStorage.getItem('token');
+    if (!token || !token.startsWith('mock-token-')) {
+      throw new Error('Not authenticated');
+    }
+    
+    const userId = token.replace('mock-token-', '');
+    const user = mockUsers.find(u => u.id === userId);
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Create new leave request
+    const newLeave = {
+      id: (mockLeaveRequests.length + 1).toString(),
+      studentId: userId,
+      studentName: user.name,
+      leaveType: leaveData.leaveType,
+      fromDate: leaveData.fromDate,
+      toDate: leaveData.toDate,
+      reason: leaveData.reason,
+      status: 'pending',
+      parentApproval: false,
+      adminApproval: false,
+      finalApproval: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    mockLeaveRequests.push(newLeave);
+    return { data: newLeave };
+  }
+};
 
-export const updateLeaveRequestStatus = (id: string, status: string) => 
-  API.put(`/leave/${id}`, { status });
+export const updateLeaveRequestStatus = async (id: string, status: string) => {
+  try {
+    return await API.put(`/leave/${id}`, { status });
+  } catch (error) {
+    console.log('Using mock leave update due to API error');
+    
+    // Get current user role
+    const token = localStorage.getItem('token');
+    if (!token || !token.startsWith('mock-token-')) {
+      throw new Error('Not authenticated');
+    }
+    
+    const userId = token.replace('mock-token-', '');
+    const user = mockUsers.find(u => u.id === userId);
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Find the leave request
+    const leaveIndex = mockLeaveRequests.findIndex(leave => leave.id === id);
+    if (leaveIndex === -1) {
+      throw new Error('Leave request not found');
+    }
+    
+    const leave = { ...mockLeaveRequests[leaveIndex] };
+    
+    // Update based on user role
+    if (user.role === 'parent') {
+      leave.parentApproval = status === 'approved';
+    } else if (user.role === 'admin') {
+      leave.adminApproval = status === 'approved';
+    }
+    
+    // Update status based on approvals
+    if (status === 'rejected') {
+      leave.status = 'rejected';
+      leave.finalApproval = false;
+    } else if (leave.parentApproval && leave.adminApproval) {
+      leave.status = 'approved';
+      leave.finalApproval = true;
+    } else {
+      leave.status = 'pending';
+    }
+    
+    leave.updatedAt = new Date().toISOString();
+    mockLeaveRequests[leaveIndex] = leave;
+    
+    return { data: leave };
+  }
+};
 
 export default API;

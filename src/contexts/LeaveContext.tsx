@@ -115,6 +115,10 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       // Add the new leave to the state
       setLeaveRequests(prev => [response.data, ...prev]);
       toast.success('Leave request submitted successfully');
+      
+      // Update localStorage
+      const updatedLeaves = [response.data, ...leaveRequests];
+      localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
     } catch (err) {
       console.error('Error creating leave request:', err);
       toast.error('Failed to submit leave request');
@@ -135,6 +139,9 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       setLeaveRequests(prev => 
         prev.map(leave => leave.id === id ? response.data : leave)
       );
+      
+      // Update localStorage
+      localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
       
       toast.success(`Leave request ${status}`);
     } catch (err) {
