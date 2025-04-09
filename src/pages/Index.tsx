@@ -60,42 +60,6 @@ const Index: React.FC = () => {
           </div>
         </section>
 
-        {/* User Roles Section */}
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <h3 className="text-2xl font-bold text-center mb-12">For Everyone in the System</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h4 className="text-xl font-semibold mb-4">Students</h4>
-                <ul className="space-y-2">
-                  <li>• Easy leave application</li>
-                  <li>• Real-time status tracking</li>
-                  <li>• Leave history</li>
-                  <li>• Simplified process</li>
-                </ul>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h4 className="text-xl font-semibold mb-4">Parents</h4>
-                <ul className="space-y-2">
-                  <li>• Leave approval access</li>
-                  <li>• View child's request details</li>
-                  <li>• Transparency in process</li>
-                  <li>• Easy decision making</li>
-                </ul>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h4 className="text-xl font-semibold mb-4">Administrators</h4>
-                <ul className="space-y-2">
-                  <li>• Complete system overview</li>
-                  <li>• Management dashboard</li>
-                  <li>• Final approval authority</li>
-                  <li>• Analytics and reporting</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* CTA Section */}
         <section className="py-16 bg-primary text-primary-foreground">
           <div className="container mx-auto px-4 text-center">
