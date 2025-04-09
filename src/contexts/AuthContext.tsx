@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role: UserRole) => Promise<User | undefined>;
   logout: () => void;
   loading: boolean;
+  isLoading: boolean; // Add this property to match usage in ProtectedRoute
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,16 +106,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     navigate('/login');
   };
 
-  const isLoggedIn = () => {
-    return !!localStorage.getItem('token');
-  };
-
   const contextValue: AuthContextType = {
     user,
     login,
     register,
     logout,
     loading,
+    isLoading: loading, // Add this to provide the isLoading property expected by ProtectedRoute
   };
 
   return (
