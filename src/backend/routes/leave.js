@@ -9,7 +9,7 @@ const User = require('../models/User');
 // @access  Private (students only)
 router.post('/', auth, authorize('student'), async (req, res) => {
   try {
-    const { fromDate, toDate, reason, leaveType } = req.body;
+    const { fromDate, toDate, fromTime, toTime, reason, leaveType } = req.body;
     
     if (!leaveType) {
       return res.status(400).json({ message: 'Leave type is required' });
@@ -20,6 +20,8 @@ router.post('/', auth, authorize('student'), async (req, res) => {
       studentName: req.user.name,
       fromDate,
       toDate,
+      fromTime: fromTime || '08:00',
+      toTime: toTime || '17:00',
       reason,
       leaveType
     });
@@ -45,13 +47,8 @@ router.get('/', auth, async (req, res) => {
         break;
       
       case 'parent':
-        // In a real app, you would have a relation between parent and student
-        // For demo purposes, let's assume parents can see all student leaves
-        leaveRequests = await LeaveRequest.find().sort({ createdAt: -1 });
-        break;
-      
       case 'admin':
-        // Admins can see all leave requests
+        // Parents and admins can see all leave requests
         leaveRequests = await LeaveRequest.find().sort({ createdAt: -1 });
         break;
       

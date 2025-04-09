@@ -29,8 +29,19 @@ const mockUsers = [
   { id: '3', name: 'Admin User', email: 'admin@example.com', role: 'admin' }
 ];
 
-// Mock leave requests data
-let mockLeaveRequests = [];
+// Mock leave requests data - initialize from localStorage if available
+let mockLeaveRequests = (() => {
+  const storedData = localStorage.getItem('leaveRequests');
+  if (storedData) {
+    try {
+      return JSON.parse(storedData);
+    } catch (e) {
+      console.error('Error parsing stored leave requests', e);
+      return [];
+    }
+  }
+  return [];
+})();
 
 // Auth services
 export const loginUser = async (email: string, password: string) => {
@@ -109,13 +120,8 @@ export const getLeaveRequests = async () => {
     // Filter leave requests based on user role and id
     const user = mockUsers.find(u => u.id === userId);
     if (user) {
-      if (user.role === 'student') {
-        // Students only see their own leave requests
-        return { data: mockLeaveRequests.filter(leave => leave.studentId === userId) };
-      } else {
-        // Parents and admins see all leave requests
-        return { data: mockLeaveRequests };
-      }
+      // During development, share all leave requests with all users to test functionality
+      return { data: mockLeaveRequests };
     }
     
     throw new Error('Not authenticated');
@@ -162,6 +168,8 @@ export const createLeaveRequest = async (leaveData: any) => {
       leaveType: leaveData.leaveType,
       fromDate: leaveData.fromDate,
       toDate: leaveData.toDate,
+      fromTime: leaveData.fromTime || '08:00',
+      toTime: leaveData.toTime || '17:00',
       reason: leaveData.reason,
       status: 'pending',
       parentApproval: false,
@@ -172,6 +180,10 @@ export const createLeaveRequest = async (leaveData: any) => {
     };
     
     mockLeaveRequests.push(newLeave);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('leaveRequests', JSON.stringify(mockLeaveRequests));
+    
     return { data: newLeave };
   }
 };
@@ -223,6 +235,9 @@ export const updateLeaveRequestStatus = async (id: string, status: string) => {
     
     leave.updatedAt = new Date().toISOString();
     mockLeaveRequests[leaveIndex] = leave;
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('leaveRequests', JSON.stringify(mockLeaveRequests));
     
     return { data: leave };
   }

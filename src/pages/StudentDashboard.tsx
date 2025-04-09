@@ -18,6 +18,8 @@ const StudentDashboard: React.FC = () => {
   const [formData, setFormData] = useState({
     fromDate: '',
     toDate: '',
+    fromTime: '08:00', // Default start time
+    toTime: '17:00',   // Default end time
     reason: '',
     leaveType: '' as LeaveType
   });
@@ -36,6 +38,7 @@ const StudentDashboard: React.FC = () => {
     e.preventDefault();
     
     if (!formData.fromDate || !formData.toDate || !formData.reason || !formData.leaveType) {
+      toast.error("Please fill all required fields");
       return;
     }
 
@@ -46,6 +49,8 @@ const StudentDashboard: React.FC = () => {
       setFormData({
         fromDate: '',
         toDate: '',
+        fromTime: '08:00',
+        toTime: '17:00',
         reason: '',
         leaveType: '' as LeaveType
       });
@@ -131,6 +136,31 @@ const StudentDashboard: React.FC = () => {
                   </div>
                 </div>
                 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fromTime">From Time</Label>
+                    <Input
+                      id="fromTime"
+                      name="fromTime"
+                      type="time"
+                      value={formData.fromTime}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="toTime">To Time</Label>
+                    <Input
+                      id="toTime"
+                      name="toTime"
+                      type="time" 
+                      value={formData.toTime}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="reason">Reason for Leave</Label>
                   <Textarea
@@ -178,6 +208,12 @@ const StudentDashboard: React.FC = () => {
                             {format(new Date(leave.fromDate), 'MMM dd, yyyy')} 
                             {leave.fromDate !== leave.toDate && 
                               <> - {format(new Date(leave.toDate), 'MMM dd, yyyy')}</>
+                            }
+                            {leave.fromTime && 
+                              <span className="ml-2">
+                                <Clock className="h-3 w-3 inline-block mr-1" />
+                                {leave.fromTime} - {leave.toTime}
+                              </span>
                             }
                           </p>
                         </div>

@@ -22,6 +22,8 @@ export interface LeaveRequest {
   leaveType: LeaveType;
   fromDate: string;
   toDate: string;
+  fromTime: string; // New field for time selection
+  toTime: string;   // New field for time selection
   reason: string;
   status: LeaveStatus;
   parentApproval: boolean;
@@ -74,6 +76,9 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       const response = await getLeaveRequests();
       console.log('Fetched leave requests:', response.data);
       setLeaveRequests(response.data);
+      
+      // Always save to localStorage for offline access
+      localStorage.setItem('leaveRequests', JSON.stringify(response.data));
     } catch (err) {
       console.error('Error fetching leave requests:', err);
       setError('Failed to fetch leave requests');
@@ -140,8 +145,10 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
         prev.map(leave => leave.id === id ? response.data : leave)
       );
       
-      // Update localStorage
-      localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
+      // Update localStorage after state update
+      localStorage.setItem('leaveRequests', JSON.stringify(
+        leaveRequests.map(leave => leave.id === id ? response.data : leave)
+      ));
       
       toast.success(`Leave request ${status}`);
     } catch (err) {

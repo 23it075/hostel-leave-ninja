@@ -24,6 +24,14 @@ const LeaveRequestSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  fromTime: {
+    type: String,
+    default: '08:00'
+  },
+  toTime: {
+    type: String,
+    default: '17:00'
+  },
   reason: {
     type: String,
     required: true
