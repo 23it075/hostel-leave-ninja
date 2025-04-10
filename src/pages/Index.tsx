@@ -59,18 +59,6 @@ const Index: React.FC = () => {
             </div>
           </div>
         </section>
-
-        {/* CTA Section */}
-        <section className="py-16 bg-primary text-primary-foreground">
-          <div className="container mx-auto px-4 text-center">
-            <h3 className="text-2xl font-bold mb-6">Ready to simplify leave management?</h3>
-            <Button size="lg" variant="secondary" asChild>
-              <Link to={user ? "/dashboard" : "/register"}>
-                {user ? "Go to Dashboard" : "Get Started Now"}
-              </Link>
-            </Button>
-          </div>
-        </section>
       </main>
 
       <footer className="bg-gray-900 text-gray-300 py-8">
