@@ -33,6 +33,11 @@ export interface LeaveRequest {
   updatedAt: string;
 }
 
+// Interface for API responses
+interface ApiResponse {
+  data: LeaveRequest;
+}
+
 interface LeaveContextType {
   leaveRequests: LeaveRequest[];
   createLeaveRequest: (data: Omit<LeaveRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'studentId' | 'studentName' | 'parentApproval' | 'adminApproval' | 'finalApproval'>) => Promise<void>;
@@ -134,11 +139,12 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       const response = await apiCreateLeave(data);
       
       // Check if response contains data before proceeding
-      if (response && 'data' in response) {
-        console.log('Created leave request:', response.data);
+      if (response && typeof response === 'object' && 'data' in response) {
+        const apiResponse = response as ApiResponse;
+        console.log('Created leave request:', apiResponse.data);
         
         // Add the new leave to the state using our uniqueness function
-        const newLeave = response.data;
+        const newLeave = apiResponse.data;
         const updatedLeaves = removeDuplicateLeaves([newLeave, ...leaveRequests]);
         setLeaveRequests(updatedLeaves);
         
@@ -165,11 +171,12 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       const response = await updateLeaveRequestStatus(id, status);
       
       // Check if response contains data before proceeding
-      if (response && 'data' in response) {
-        console.log('Updated leave request:', response.data);
+      if (response && typeof response === 'object' && 'data' in response) {
+        const apiResponse = response as ApiResponse;
+        console.log('Updated leave request:', apiResponse.data);
         
         // Find the updated leave in our state
-        const updatedLeave = response.data;
+        const updatedLeave = apiResponse.data;
         
         // Update the leave in the state, ensuring no duplicates
         const updatedLeaves = leaveRequests.map(leave => 
