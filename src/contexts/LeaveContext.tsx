@@ -75,10 +75,13 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     try {
       const response = await getLeaveRequests();
       console.log('Fetched leave requests:', response.data);
-      setLeaveRequests(response.data);
+      
+      // Ensure each leave request has a unique ID
+      const uniqueLeaves = removeDuplicateLeaves(response.data);
+      setLeaveRequests(uniqueLeaves);
       
       // Always save to localStorage for offline access
-      localStorage.setItem('leaveRequests', JSON.stringify(response.data));
+      localStorage.setItem('leaveRequests', JSON.stringify(uniqueLeaves));
     } catch (err) {
       console.error('Error fetching leave requests:', err);
       setError('Failed to fetch leave requests');
@@ -88,7 +91,8 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       if (storedLeaves) {
         try {
           const parsedLeaves = JSON.parse(storedLeaves);
-          setLeaveRequests(parsedLeaves);
+          const uniqueLeaves = removeDuplicateLeaves(parsedLeaves);
+          setLeaveRequests(uniqueLeaves);
         } catch (parseErr) {
           console.error('Error parsing stored leave requests:', parseErr);
         }
@@ -98,10 +102,23 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to remove duplicate leave requests by ID
+  const removeDuplicateLeaves = (leaves: LeaveRequest[]): LeaveRequest[] => {
+    const uniqueLeaves = new Map<string, LeaveRequest>();
+    
+    leaves.forEach(leave => {
+      uniqueLeaves.set(leave.id, leave);
+    });
+    
+    return Array.from(uniqueLeaves.values());
+  };
+
   // Fetch leaves when component mounts and when user changes
   useEffect(() => {
     if (user) {
       fetchLeaves();
+    } else {
+      setLeaveRequests([]);
     }
   }, [user]);
 
@@ -117,12 +134,14 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       const response = await apiCreateLeave(data);
       console.log('Created leave request:', response.data);
       
-      // Add the new leave to the state
-      setLeaveRequests(prev => [response.data, ...prev]);
+      // Add the new leave to the state using our uniqueness function
+      const newLeave = response.data;
+      const updatedLeaves = removeDuplicateLeaves([newLeave, ...leaveRequests]);
+      setLeaveRequests(updatedLeaves);
+      
       toast.success('Leave request submitted successfully');
       
       // Update localStorage
-      const updatedLeaves = [response.data, ...leaveRequests];
       localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
     } catch (err) {
       console.error('Error creating leave request:', err);
@@ -140,15 +159,18 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
       const response = await updateLeaveRequestStatus(id, status);
       console.log('Updated leave request:', response.data);
       
-      // Update the leave in the state
-      setLeaveRequests(prev => 
-        prev.map(leave => leave.id === id ? response.data : leave)
+      // Find the updated leave in our state
+      const updatedLeave = response.data;
+      
+      // Update the leave in the state, ensuring no duplicates
+      const updatedLeaves = leaveRequests.map(leave => 
+        leave.id === id ? updatedLeave : leave
       );
       
-      // Update localStorage after state update
-      localStorage.setItem('leaveRequests', JSON.stringify(
-        leaveRequests.map(leave => leave.id === id ? response.data : leave)
-      ));
+      setLeaveRequests(updatedLeaves);
+      
+      // Update localStorage
+      localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
       
       toast.success(`Leave request ${status}`);
     } catch (err) {

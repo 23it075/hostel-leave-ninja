@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { School } from 'lucide-react';
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
+      toast.error("Please fill in all fields");
       return;
     }
 
@@ -27,6 +29,7 @@ const Login = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
+      // Error is already handled by the AuthContext
     } finally {
       setIsSubmitting(false);
     }

@@ -120,7 +120,13 @@ export const getLeaveRequests = async () => {
     // Filter leave requests based on user role and id
     const user = mockUsers.find(u => u.id === userId);
     if (user) {
-      // During development, share all leave requests with all users to test functionality
+      // Ensure there are no duplicates by ID in mockLeaveRequests
+      const uniqueLeaves = new Map();
+      mockLeaveRequests.forEach(leave => {
+        uniqueLeaves.set(leave.id, leave);
+      });
+      mockLeaveRequests = Array.from(uniqueLeaves.values());
+      
       return { data: mockLeaveRequests };
     }
     
@@ -160,9 +166,12 @@ export const createLeaveRequest = async (leaveData: any) => {
       throw new Error('User not found');
     }
     
+    // Create unique ID for new leave request
+    const newLeaveId = Date.now().toString();
+    
     // Create new leave request
     const newLeave = {
-      id: (mockLeaveRequests.length + 1).toString(),
+      id: newLeaveId,
       studentId: userId,
       studentName: user.name,
       leaveType: leaveData.leaveType,
@@ -179,7 +188,13 @@ export const createLeaveRequest = async (leaveData: any) => {
       updatedAt: new Date().toISOString()
     };
     
-    mockLeaveRequests.push(newLeave);
+    // Add to mock data ensuring no duplicates
+    const existingIndex = mockLeaveRequests.findIndex(leave => leave.id === newLeaveId);
+    if (existingIndex !== -1) {
+      mockLeaveRequests[existingIndex] = newLeave;
+    } else {
+      mockLeaveRequests.push(newLeave);
+    }
     
     // Save to localStorage for persistence
     localStorage.setItem('leaveRequests', JSON.stringify(mockLeaveRequests));
@@ -213,6 +228,7 @@ export const updateLeaveRequestStatus = async (id: string, status: string) => {
       throw new Error('Leave request not found');
     }
     
+    // Create a new object to avoid direct mutation
     const leave = { ...mockLeaveRequests[leaveIndex] };
     
     // Update based on user role
@@ -239,7 +255,12 @@ export const updateLeaveRequestStatus = async (id: string, status: string) => {
     // Save to localStorage for persistence
     localStorage.setItem('leaveRequests', JSON.stringify(mockLeaveRequests));
     
-    return { data: leave };
+    // Add a short delay to simulate server processing
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({ data: leave });
+      }, 300);
+    });
   }
 };
 

@@ -6,28 +6,39 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from "sonner";
 
 const ParentDashboard: React.FC = () => {
-  const { leaveRequests, updateLeaveRequest } = useLeave();
+  const { leaveRequests, updateLeaveRequest, loading } = useLeave();
   
   const pendingLeaves = leaveRequests.filter(leave => leave.status === 'pending');
   const allLeaves = [...leaveRequests].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
-  const handleApprove = (id: string) => {
-    updateLeaveRequest(id, 'approved');
+  const handleApprove = async (id: string) => {
+    try {
+      await updateLeaveRequest(id, 'approved');
+      toast.success("Leave request approved successfully");
+    } catch (error) {
+      toast.error("Failed to approve leave request");
+    }
   };
   
-  const handleReject = (id: string) => {
-    updateLeaveRequest(id, 'rejected');
+  const handleReject = async (id: string) => {
+    try {
+      await updateLeaveRequest(id, 'rejected');
+      toast.success("Leave request rejected successfully");
+    } catch (error) {
+      toast.error("Failed to reject leave request");
+    }
   };
 
   const LeaveStatusBadge: React.FC<{ status: LeaveRequest['status'] }> = ({ status }) => {
     const statusConfig = {
-      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'leave-status-pending' },
-      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'leave-status-approved' },
-      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'leave-status-rejected' }
+      pending: { icon: <Clock className="h-4 w-4 mr-1" />, class: 'bg-yellow-100 text-yellow-800' },
+      approved: { icon: <CheckCircle className="h-4 w-4 mr-1" />, class: 'bg-green-100 text-green-800' },
+      rejected: { icon: <XCircle className="h-4 w-4 mr-1" />, class: 'bg-red-100 text-red-800' }
     };
     
     const config = statusConfig[status];
@@ -69,19 +80,39 @@ const ParentDashboard: React.FC = () => {
             <p className="text-sm font-medium">Reason</p>
             <p className="text-sm text-gray-700">{leave.reason}</p>
           </div>
+          <div className="mt-3">
+            <p className="text-sm font-medium">Approval Status</p>
+            <div className="flex gap-4 mt-1">
+              <div className="flex items-center">
+                <span className="text-sm mr-2">Parent:</span>
+                {leave.parentApproval ? 
+                  <span className="text-green-600 flex items-center"><CheckCircle className="h-3 w-3 mr-1" /> Approved</span> : 
+                  <span className="text-gray-500 flex items-center"><Clock className="h-3 w-3 mr-1" /> Pending</span>
+                }
+              </div>
+              <div className="flex items-center">
+                <span className="text-sm mr-2">Admin:</span>
+                {leave.adminApproval ? 
+                  <span className="text-green-600 flex items-center"><CheckCircle className="h-3 w-3 mr-1" /> Approved</span> : 
+                  <span className="text-gray-500 flex items-center"><Clock className="h-3 w-3 mr-1" /> Pending</span>
+                }
+              </div>
+            </div>
+          </div>
         </CardContent>
         <CardFooter className="pt-0 flex justify-between items-center">
           <div className="text-xs text-muted-foreground">
             Last updated: {format(new Date(leave.updatedAt), 'PPP')}
           </div>
           
-          {isPending && (
+          {isPending && !leave.parentApproval && (
             <div className="flex gap-2">
               <Button 
                 size="sm" 
                 variant="outline" 
                 className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={() => handleReject(leave.id)}
+                disabled={loading}
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Reject
@@ -89,6 +120,7 @@ const ParentDashboard: React.FC = () => {
               <Button 
                 size="sm"
                 onClick={() => handleApprove(leave.id)}
+                disabled={loading}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Approve
