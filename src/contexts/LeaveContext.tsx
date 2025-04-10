@@ -132,17 +132,23 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const response = await apiCreateLeave(data);
-      console.log('Created leave request:', response.data);
       
-      // Add the new leave to the state using our uniqueness function
-      const newLeave = response.data;
-      const updatedLeaves = removeDuplicateLeaves([newLeave, ...leaveRequests]);
-      setLeaveRequests(updatedLeaves);
-      
-      toast.success('Leave request submitted successfully');
-      
-      // Update localStorage
-      localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
+      // Check if response contains data before proceeding
+      if (response && 'data' in response) {
+        console.log('Created leave request:', response.data);
+        
+        // Add the new leave to the state using our uniqueness function
+        const newLeave = response.data;
+        const updatedLeaves = removeDuplicateLeaves([newLeave, ...leaveRequests]);
+        setLeaveRequests(updatedLeaves);
+        
+        toast.success('Leave request submitted successfully');
+        
+        // Update localStorage
+        localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
       console.error('Error creating leave request:', err);
       toast.error('Failed to submit leave request');
@@ -157,22 +163,28 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const response = await updateLeaveRequestStatus(id, status);
-      console.log('Updated leave request:', response.data);
       
-      // Find the updated leave in our state
-      const updatedLeave = response.data;
-      
-      // Update the leave in the state, ensuring no duplicates
-      const updatedLeaves = leaveRequests.map(leave => 
-        leave.id === id ? updatedLeave : leave
-      );
-      
-      setLeaveRequests(updatedLeaves);
-      
-      // Update localStorage
-      localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
-      
-      toast.success(`Leave request ${status}`);
+      // Check if response contains data before proceeding
+      if (response && 'data' in response) {
+        console.log('Updated leave request:', response.data);
+        
+        // Find the updated leave in our state
+        const updatedLeave = response.data;
+        
+        // Update the leave in the state, ensuring no duplicates
+        const updatedLeaves = leaveRequests.map(leave => 
+          leave.id === id ? updatedLeave : leave
+        );
+        
+        setLeaveRequests(updatedLeaves);
+        
+        // Update localStorage
+        localStorage.setItem('leaveRequests', JSON.stringify(updatedLeaves));
+        
+        toast.success(`Leave request ${status}`);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
       console.error('Error updating leave request:', err);
       toast.error('Failed to update leave request');
