@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLeave, LeaveType, LEAVE_TYPE_LABELS } from '@/contexts/LeaveContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,14 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, X } from 'lucide-react';
 import { format } from 'date-fns';
 import LeaveTypeBadge from '@/components/LeaveTypeBadge';
+import { toast } from "sonner";
 
 const StudentDashboard: React.FC = () => {
   const { leaveRequests, createLeaveRequest, loading } = useLeave();
   const [formData, setFormData] = useState({
     fromDate: '',
     toDate: '',
-    fromTime: '08:00', // Default start time
-    toTime: '17:00',   // Default end time
+    fromTime: '08:00',
+    toTime: '17:00',
     reason: '',
     leaveType: '' as LeaveType
   });
@@ -45,7 +45,6 @@ const StudentDashboard: React.FC = () => {
     setIsSubmitting(true);
     try {
       await createLeaveRequest(formData);
-      // Reset form after successful submission
       setFormData({
         fromDate: '',
         toDate: '',
@@ -130,7 +129,7 @@ const StudentDashboard: React.FC = () => {
                       type="date" 
                       value={formData.toDate}
                       onChange={handleChange}
-                      min={formData.fromDate} // Ensures to date is after from date
+                      min={formData.fromDate}
                       required
                     />
                   </div>
