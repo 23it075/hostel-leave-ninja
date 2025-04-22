@@ -65,14 +65,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await loginUser(email, password);
       const userData = response.data;
+      
+      // Create a user object with correct structure
+      const user = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
+      };
 
       // Save the token to localStorage
       localStorage.setItem('token', userData.token);
-      localStorage.setItem('user', JSON.stringify(userData.user));
+      localStorage.setItem('user', JSON.stringify(user));
       
-      setUser(userData.user);
+      setUser(user);
       
-      return userData.user;
+      return user;
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Invalid credentials. Please try again.');
@@ -84,14 +92,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await registerUser(name, email, password, role);
       const userData = response.data;
+      
+      // Create a user object with correct structure
+      const user = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
+      };
 
       // Save the token to localStorage
       localStorage.setItem('token', userData.token);
-      localStorage.setItem('user', JSON.stringify(userData.user));
+      localStorage.setItem('user', JSON.stringify(user));
       
-      setUser(userData.user);
+      setUser(user);
       
-      return userData.user;
+      return user;
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('Registration failed. Please try again.');

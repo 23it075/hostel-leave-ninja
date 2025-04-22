@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { UserRole } from '../contexts/AuthContext';
 
@@ -40,11 +41,14 @@ export const loginUser = async (email: string, password: string) => {
     console.log('Using mock login due to API error');
     // Mock implementation for development
     const user = mockUsers.find(u => u.email === email);
-    if (user && password.length > 5) {
+    if (user && password.length > 0) { // Changed from password.length > 5 to allow any password for testing
       return {
         data: {
           token: 'mock-token-' + user.id,
-          user
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role
         }
       };
     }
@@ -66,7 +70,10 @@ export const registerUser = async (name: string, email: string, password: string
     return {
       data: {
         token: 'mock-token-' + newId,
-        user: newUser
+        id: newId,
+        name,
+        email,
+        role
       }
     };
   }

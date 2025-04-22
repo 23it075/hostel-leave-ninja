@@ -88,7 +88,12 @@ router.post('/login', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    res.json(user);
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
