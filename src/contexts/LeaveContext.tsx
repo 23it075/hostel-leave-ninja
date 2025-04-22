@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "sonner";
 import { useAuth } from './AuthContext';
@@ -69,6 +68,11 @@ export const LeaveProvider: React.FC<LeaveProviderProps> = ({ children }) => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Remove any stored leave requests from localStorage
+  useEffect(() => {
+    localStorage.removeItem('leaveRequests');
+  }, []);
 
   // Function to fetch leaves from the API
   const fetchLeaves = async () => {

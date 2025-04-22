@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { UserRole } from '../contexts/AuthContext';
 
@@ -29,19 +28,8 @@ const mockUsers = [
   { id: '3', name: 'Admin User', email: 'admin@example.com', role: 'admin' }
 ];
 
-// Mock leave requests data - initialize from localStorage if available
-let mockLeaveRequests = (() => {
-  const storedData = localStorage.getItem('leaveRequests');
-  if (storedData) {
-    try {
-      return JSON.parse(storedData);
-    } catch (e) {
-      console.error('Error parsing stored leave requests', e);
-      return [];
-    }
-  }
-  return [];
-})();
+// Mock leave requests data - now starting as an empty array
+let mockLeaveRequests: any[] = [];
 
 // Auth services
 export const loginUser = async (email: string, password: string) => {
