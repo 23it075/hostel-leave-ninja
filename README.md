@@ -86,6 +86,6 @@
 ### Start Frontend
 
 ```bash
-cd hostel-leave-ninja
+cd leaveit-frontend
 npm install
 npm run dev
