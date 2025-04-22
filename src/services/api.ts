@@ -29,7 +29,7 @@ const mockUsers = [
   { id: '3', name: 'Admin User', email: 'admin@example.com', role: 'admin' }
 ];
 
-// Mock leave requests data - now starting as an empty array
+// Mock leave requests data - now an empty array to remove demo data
 let mockLeaveRequests: any[] = [];
 
 // Auth services
@@ -41,7 +41,7 @@ export const loginUser = async (email: string, password: string) => {
     console.log('Using mock login due to API error');
     // Mock implementation for development
     const user = mockUsers.find(u => u.email === email);
-    if (user && password.length > 0) { // Changed from password.length > 5 to allow any password for testing
+    if (user && password.length > 0) {
       return {
         data: {
           token: 'mock-token-' + user.id,
@@ -91,7 +91,15 @@ export const getCurrentUser = async () => {
       const userId = token.replace('mock-token-', '');
       const user = mockUsers.find(u => u.id === userId);
       if (user) {
-        return { data: user };
+        // Match the structure returned by the /auth/me endpoint
+        return { 
+          data: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          } 
+        };
       }
     }
     throw new Error('Not authenticated');
@@ -260,3 +268,4 @@ export const updateLeaveRequestStatus = async (id: string, status: string) => {
 };
 
 export default API;
+

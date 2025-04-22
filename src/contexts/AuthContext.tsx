@@ -43,22 +43,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Load user from localStorage on initial render
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-
-    if (storedUser && storedToken) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        // Clear potentially invalid data from localStorage
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+    const fetchUser = async () => {
+      const storedToken = localStorage.getItem('token');
+      
+      if (storedToken) {
+        try {
+          // Attempt to get the current user from the server
+          const response = await getCurrentUser();
+          const userData = response.data;
+          
+          // Set user state with the returned data
+          setUser({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role
+          });
+          
+          // Update localStorage with the latest user data
+          localStorage.setItem('user', JSON.stringify(userData));
+        } catch (error) {
+          console.error('Error fetching current user:', error);
+          // Clear invalid token and user data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
       }
-    }
+      
+      setLoading(false);
+    };
 
-    setLoading(false);
+    fetchUser();
   }, []);
 
   const login = async (email: string, password: string) => {
