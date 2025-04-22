@@ -1,3 +1,4 @@
+
 # LeaveIt – Hostel Leave Management System
 
 *LeaveIt* is a web application designed to streamline hostel leave management for students, parents, and administrators. It provides an efficient platform to submit, track, and manage leave requests with a dual-approval workflow.
@@ -7,7 +8,7 @@
 ### User Roles
 
 - *Students*: Submit and track leave requests.
-- *Parents*: Review and approve/reject their children’s leave requests.
+- *Parents*: Review and approve/reject their children's leave requests.
 - *Administrators*: Provide final approval/rejection and manage system settings.
 
 ### Leave Management
@@ -89,3 +90,4 @@
 cd leaveit-frontend
 npm install
 npm run dev
+```
